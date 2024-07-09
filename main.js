@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Confluence Floating TOC with Toggle
 // @namespace    http://tampermonkey.net/
-// @version      1.8
+// @version      1.9
 // @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能，悬浮在 content-body 内部左侧并随滚动固定，过滤掉 id 为空的标题，监听页面变化，使用已有的 TOC 如果存在
 // @author       Your Name
 // @match        https://*.atlassian.net/wiki/*
@@ -117,9 +117,8 @@ function buildToc() {
     var tocContainer = document.createElement('div');
     tocContainer.id = 'floating-toc-container';
     tocContainer.style.position = 'fixed';
-    tocContainer.style.top = '200px';
+    tocContainer.style.top = '200px'; // 设置为 200px
     tocContainer.style.width = '200px';
-    tocContainer.style.maxHeight = '80%';
     tocContainer.style.overflowY = 'auto';
     tocContainer.style.backgroundColor = '#fff';
     tocContainer.style.border = '1px solid #ccc';
@@ -185,6 +184,15 @@ function generateTOC(tocContainer) {
     // 添加折叠/展开按钮
     const toggleButton = buildToggleButton(toc);
     tocContainer.appendChild(toggleButton);
+
+    // 动态计算最大高度
+    updateMaxHeight(tocContainer);
+}
+
+function updateMaxHeight(tocContainer) {
+    const viewportHeight = window.innerHeight;
+    const topOffset = parseFloat(tocContainer.style.top);
+    tocContainer.style.maxHeight = (viewportHeight - topOffset - 20) + 'px'; // 20px 为一些额外的间距
 }
 
 
@@ -226,5 +234,11 @@ function generateTOC(tocContainer) {
         if (contentBody) {
             tocContainer.style.left = contentBody.getBoundingClientRect().left + 'px';
         }
+        updateMaxHeight(tocContainer);
+    });
+
+    // 确保目录在滚动时保持在视口内
+    window.addEventListener('scroll', function () {
+        updateMaxHeight(tocContainer);
     });
 })();
