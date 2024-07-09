@@ -14,6 +14,17 @@ The Confluence Float TOC plugin is a user script implemented using Tampermonkey.
 - Smooth scrolling: Clicking on a TOC entry smoothly scrolls the page to the corresponding section.
 
 ## Installation
+
+### Greasy Fork
+
+To install the Confluence Float TOC plugin via Greasy Fork, follow these steps:
+1. Go to the [Confluence Float TOC](https://greasyfork.org/zh-CN/scripts/500070-confluence-floating-toc) website.
+2. Click on the "Install this script" button.
+3. Confirm the installation when prompted.
+4. Refresh any open Confluence pages to activate the plugin.
+
+### Manual            
+
 To use the Confluence Float TOC plugin, follow these steps:
 1. Install a user script manager extension such as [Tampermonkey](https://chromewebstore.google.com/detail/%E7%AF%A1%E6%94%B9%E7%8C%B4/dhdgffkkebhmkfjojejmpbldmpobfkfo) in your browser.
 2. Open the script manager and create a new script.
