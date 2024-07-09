@@ -3,9 +3,10 @@
 // @namespace    http://tampermonkey.net/
 // @version      1.9
 // @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能，悬浮在 content-body 内部左侧并随滚动固定，过滤掉 id 为空的标题，监听页面变化，使用已有的 TOC 如果存在
-// @author       Your Name
+// @author       mkdir700
 // @match        https://*.atlassian.net/wiki/*
 // @grant        none
+// @license      MIT
 // ==/UserScript==
 
 
