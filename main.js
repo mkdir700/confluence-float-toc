@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Confluence Floating TOC
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      2.2
 // @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能
 // @author       mkdir700
 // @match        https://*.atlassian.net/wiki/*
