@@ -5,7 +5,7 @@ The Confluence Float TOC plugin is a user script implemented using Tampermonkey.
 
 ## Demo
 
-![image](https://github.com/mkdir700/confluence-float-toc/assets/56359329/04b9a656-e4cc-43d3-bf79-05f8a8c8f69a)
+![image](https://github.com/mkdir700/confluence-float-toc/assets/56359329/d74795d0-12f6-49ce-9492-7ec24284111f)
 
 
 ## Features
