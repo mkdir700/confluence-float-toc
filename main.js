@@ -18,7 +18,8 @@ function genertateTOCFromExistingToc(toc) {
     let currUl = document.createElement('ul');
     currUl.id = 'floating-toc-ul';
     for (let i = 0; i < toc.children.length; i++) {
-        // li > span > a > span > span
+        // li > span > a
+        var a = toc.children[i].querySelector('span > a');
         var headerTextElement = toc.children[i].querySelector('span > a > span > span');
         if (!headerTextElement) {
             continue;
@@ -35,7 +36,7 @@ function genertateTOCFromExistingToc(toc) {
 
         // 使用标题的 id 作为 URL 片段
         // 标题中的空格需要替换为 -，并且转为小写
-        tocLink.href = '#' + headerText.replace(/\s/g, '-');
+        tocLink.href = a.href;
         tocItem.appendChild(tocLink);
 
         // 如果有子目录，递归处理
