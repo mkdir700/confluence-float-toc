@@ -1,12 +1,14 @@
 // ==UserScript==
 // @name         Confluence Floating TOC
 // @namespace    http://tampermonkey.net/
-// @version      2.2
+// @version      2.3
 // @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能
 // @author       mkdir700
 // @match        https://*.atlassian.net/wiki/*
 // @grant        none
 // @license      MIT
+// @downloadURL https://update.greasyfork.org/scripts/500070/Confluence%20Floating%20TOC.user.js
+// @updateURL https://update.greasyfork.org/scripts/500070/Confluence%20Floating%20TOC.meta.js
 // ==/UserScript==
 
 
@@ -84,7 +86,18 @@ function generateTOCFormPage() {
         if (header.className === 'cc-te0214') {
             return;
         }
-        
+        // 排除特定的 h2 标签
+        if (header.tagName === 'H2' && header.closest('[data-vc="end-of-page-recommendation-component"]')) {
+            return;
+        }
+        // 排除 "快速入门" 标题
+        if (header.closest('[data-test-id="onboarding-quickstart-experience"]')) {
+            return;
+        }
+
+        if (header.closest('[data-test-id="flag-visibility-wrapper"]')) {
+            return;
+        }
 
         // 创建目录项
         var tocItem = document.createElement('li');
@@ -101,87 +114,149 @@ function generateTOCFormPage() {
         // 将目录项添加到目录列表中
         tocList.appendChild(tocItem);
     });
+
     return tocList;
 }
 
-
 function buildToggleButton() {
-    // 添加折叠/展开按钮
-    var toggleButton = document.createElement('button');
-    toggleButton.textContent = '折叠';
+    var toggleButton = document.createElement('div');
+    toggleButton.id = 'floating-toc-toggle';
+    toggleButton.innerHTML = '&#9654;'; // 右箭头 Unicode 字符
     toggleButton.style.position = 'fixed';
     toggleButton.style.top = '200px';
     toggleButton.style.right = '0';
     toggleButton.style.backgroundColor = '#007bff';
     toggleButton.style.color = '#fff';
-    toggleButton.style.border = 'none';
-    toggleButton.style.padding = '5px';
+    toggleButton.style.width = '20px';
+    toggleButton.style.height = '40px';
+    toggleButton.style.display = 'flex';
+    toggleButton.style.justifyContent = 'center';
+    toggleButton.style.alignItems = 'center';
     toggleButton.style.cursor = 'pointer';
+    toggleButton.style.userSelect = 'none';
+    toggleButton.style.borderRadius = '5px 0 0 5px';
+    toggleButton.style.zIndex = '1000';
+    toggleButton.style.transition = 'all 0.3s ease-in-out';
+    toggleButton.style.fontSize = '14px';
 
     var isCollapsed = false;
-    // 折叠和展开功能
     toggleButton.addEventListener('click', function () {
         var tocContainer = document.getElementById('floating-toc-container');
         if (isCollapsed) {
-            tocContainer.style.visibility = 'visible';
-            toggleButton.textContent = '折叠';
+            tocContainer.style.right = '0';
+            toggleButton.innerHTML = '&#9654;'; // 右箭头
+            toggleButton.style.right = '220px'; // 调整按钮位置
         } else {
-            tocContainer.style.visibility = 'hidden';
-            toggleButton.textContent = '展开';
+            tocContainer.style.right = '-220px'; // 完全隐藏目录
+            toggleButton.innerHTML = '&#9664;'; // 左箭头
+            toggleButton.style.right = '-10px';
         }
         isCollapsed = !isCollapsed;
     });
+
+    toggleButton.addEventListener('mouseenter', function() {
+        if (isCollapsed) {
+            toggleButton.style.right = '0';
+        }
+    });
+
+    toggleButton.addEventListener('mouseleave', function() {
+        if (isCollapsed) {
+            toggleButton.style.right = '-10px';
+        }
+    });
+
     return toggleButton;
 }
 
 
 function buildToc() {
-    // 创建浮动目录的容器
     var tocContainer = document.createElement('div');
     tocContainer.id = 'floating-toc-container';
-    tocContainer.style.width = '200px';
+    tocContainer.style.width = '220px'; // 增加宽度以包含padding
     tocContainer.style.backgroundColor = '#fff';
     tocContainer.style.border = '1px solid #ccc';
     tocContainer.style.padding = '10px';
+    tocContainer.style.boxSizing = 'border-box'; // 确保padding包含在宽度内
     tocContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
-    tocContainer.style.zIndex = '4';
-    tocContainer.style.fontSize = '14px';
+    tocContainer.style.position = 'fixed';
+    tocContainer.style.top = '200px';
+    tocContainer.style.right = '0';
+    tocContainer.style.maxHeight = 'calc(100vh - 300px)';
+    tocContainer.style.overflowY = 'auto';
+    tocContainer.style.transition = 'right 0.3s ease-in-out';
+    tocContainer.style.zIndex = '999';
+    tocContainer.style.scrollbarWidth = 'none';
+    tocContainer.style.msOverflowStyle = 'none';
 
-    // 添加隐藏滚动条样式
     var style = document.createElement('style');
-    style.innerHTML = `
-        #floating-toc-container {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
+    style.textContent = `
         #floating-toc-container::-webkit-scrollbar {
             display: none;
         }
     `;
     document.head.appendChild(style);
 
+    var tocTitle = document.createElement('div');
+    tocTitle.textContent = '目录';
+    tocTitle.style.marginTop = '0';
+    tocTitle.style.marginBottom = '10px';
+    tocTitle.style.textAlign = 'center';
+    tocTitle.style.fontSize = '16px';
+    tocTitle.style.fontWeight = 'bold';
+    tocContainer.appendChild(tocTitle);
+
     return tocContainer;
 }
 
-
 function generateTOC() {
-    // 检查是否存在已有的 TOC
     var existingTOC = getExistingToc();
-
     var toc;
+
     if (existingTOC) {
         toc = genertateTOCFromExistingToc(existingTOC);
-    }
-
-    if (toc === undefined || !toc) {
+    } else {
         toc = generateTOCFormPage();
     }
-    
-    toc.style.position = 'relative';
+
+    // 检查目录是否为空
+    if (!toc || toc.children.length === 0) {
+        var emptyMessage = document.createElement('div');
+        emptyMessage.id = 'floating-toc-empty-message';
+        emptyMessage.textContent = '当前页面没有可用的目录内容';
+        emptyMessage.style.color = '#666';
+        emptyMessage.style.fontStyle = 'italic';
+        emptyMessage.style.textAlign = 'center';
+        emptyMessage.style.padding = '20px 0';
+        return emptyMessage;
+    }
+
     toc.style.listStyle = 'none';
     toc.style.padding = '0';
+    toc.style.margin = '0';
 
-    return toc
+    // 优化目录列表样式
+    var listItems = toc.querySelectorAll('li');
+    listItems.forEach(function(item) {
+        item.style.marginBottom = '5px';
+        var link = item.querySelector('a');
+        if (link) {
+            link.style.textDecoration = 'none';
+            link.style.color = '#333';
+            link.style.display = 'block';
+            link.style.padding = '3px 5px';
+            link.style.borderRadius = '3px';
+            link.style.transition = 'background-color 0.2s';
+            link.addEventListener('mouseover', function() {
+                this.style.backgroundColor = '#f0f0f0';
+            });
+            link.addEventListener('mouseout', function() {
+                this.style.backgroundColor = 'transparent';
+            });
+        }
+    });
+
+    return toc;
 }
 
 function updateMaxHeight(tocContainer) {
@@ -191,85 +266,136 @@ function updateMaxHeight(tocContainer) {
 }
 
 
+function buildBackToTopButton() {
+    var backToTopButton = document.createElement('div');
+    backToTopButton.id = 'back-to-top-button';
+    backToTopButton.innerHTML = '&#9650;'; // 上箭头 Unicode 字符
+    backToTopButton.style.position = 'fixed';
+    backToTopButton.style.bottom = '30px';
+    backToTopButton.style.right = '220px'; // 调整位置，使其位于目录左侧
+    backToTopButton.style.backgroundColor = '#007bff';
+    backToTopButton.style.color = '#fff';
+    backToTopButton.style.width = '40px';
+    backToTopButton.style.height = '40px';
+    backToTopButton.style.borderRadius = '50%';
+    backToTopButton.style.display = 'flex';
+    backToTopButton.style.justifyContent = 'center';
+    backToTopButton.style.alignItems = 'center';
+    backToTopButton.style.cursor = 'pointer';
+    backToTopButton.style.fontSize = '20px';
+    backToTopButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    backToTopButton.style.transition = 'opacity 0.3s';
+    backToTopButton.style.opacity = '0';
+    backToTopButton.style.zIndex = '1000';
+
+    backToTopButton.addEventListener('click', function() {
+        window.scrollTo({top: 0, behavior: 'smooth'});
+    });
+
+    window.addEventListener('scroll', function() {
+        if (window.pageYOffset > 100) {
+            backToTopButton.style.opacity = '1';
+        } else {
+            backToTopButton.style.opacity = '0';
+        }
+    });
+
+    return backToTopButton;
+}
+
+
 (function () {
     'use strict';
-    
-    var container = document.createElement('div');
-    container.id = 'floating-toc-div';
-    container.style.position = 'fixed';
-    container.style.right = '0';
-    container.style.top = '200px'; // 设置为 200px
-    container.style.maxHeight = 'calc(100vh - 400px)';
-    container.style.overflowY = 'auto';
-    
-    // 添加隐藏滚动条样式
-    var style = document.createElement('style');
-    style.innerHTML = `
-        #floating-toc-div {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-        }
-        #floating-toc-div::-webkit-scrollbar {
-            display: none;
-        }
-    `;
-    document.head.appendChild(style);
-    document.body.appendChild(container);
-    
 
     var tocContainer = buildToc();
-    container.appendChild(tocContainer);
+    document.body.appendChild(tocContainer);
 
-    // 添加折叠/展开按钮
-    const toggleButton = buildToggleButton();
-    container.appendChild(toggleButton);
+    var toggleButton = buildToggleButton();
+    document.body.appendChild(toggleButton);
 
-    function onChange() {
-        var tocList;
-        tocList = document.getElementById('floating-toc-ul');
-        if (tocList) {
-            tocList.remove();
+    // 初始化按钮位置
+    toggleButton.style.right = '220px';
+
+    var backToTopButton = buildBackToTopButton();
+    document.body.appendChild(backToTopButton);
+
+    function updateTOC() {
+        var existingContent = document.getElementById('floating-toc-ul') || document.getElementById('floating-toc-empty-message');
+        if (existingContent) {
+            existingContent.remove();
         }
 
-        tocList = generateTOC(tocContainer);
-        tocContainer.appendChild(tocList);
-
-        // 动态计算最大高度
-        updateMaxHeight(tocContainer);
+        var newContent = generateTOC();
+        tocContainer.appendChild(newContent);
     }
 
-    onChange();
+    // 使用防抖函数来限制更新频率
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
 
-    var latestMainContent;
-    var latestEditorTextarea;
+    // 防抖处理的更新函数
+    const debouncedUpdateTOC = debounce(updateTOC, 300);
 
-    window.addEventListener('load', function () {
-        const checkMainContentExistence = setInterval(function() {
-            const mainContent = document.getElementById('main-content');
-            if (mainContent) {
-                if (latestMainContent === mainContent) {
-                    return;
+    // 初始化目录
+    updateTOC();
+
+    // 监听 URL 变化
+    var lastUrl = location.href;
+    new MutationObserver(() => {
+        const url = location.href;
+        if (url !== lastUrl) {
+            lastUrl = url;
+            setTimeout(updateTOC, 1000); // 延迟 1 秒更新目录，确保页面内容已加载
+        }
+    }).observe(document, {subtree: true, childList: true});
+
+    // 监听页面内容变化，包括编辑状态下的变化
+    var contentObserver = new MutationObserver(function(mutations) {
+        let shouldUpdate = false;
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'childList') {
+                // 检查是否有新的标题元素被添加或删除
+                mutation.addedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && /^H[1-6]$/i.test(node.tagName)) {
+                        shouldUpdate = true;
+                    }
+                });
+                mutation.removedNodes.forEach(function(node) {
+                    if (node.nodeType === 1 && /^H[1-6]$/i.test(node.tagName)) {
+                        shouldUpdate = true;
+                    }
+                });
+            } else if (mutation.type === 'characterData') {
+                // 检查文本内容的变化
+                let node = mutation.target.parentNode;
+                while (node && node !== document.body) {
+                    if (/^H[1-6]$/i.test(node.tagName)) {
+                        shouldUpdate = true;
+                        break;
+                    }
+                    node = node.parentNode;
                 }
-                onChange();
             }
-        }, 1000);
+        });
 
-        // 轮询检查 ak-editor-textarea 是否存在
-        const checkTextareaExistence = setInterval(function() {
-            const editorTextarea = document.getElementById('ak-editor-textarea');
-            if (editorTextarea) {
-                if (latestEditorTextarea === editorTextarea) {
-                    return;
-                }
-                onChange();
-            }
-        }, 1000);
-
+        if (shouldUpdate) {
+            debouncedUpdateTOC();
+        }
     });
 
-    // 确保目录在滚动时保持在视口内
-    window.addEventListener('scroll', function () {
-        updateMaxHeight(tocContainer);
+    contentObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
     });
+
 })();
-
