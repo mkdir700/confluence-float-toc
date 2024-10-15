@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Confluence Floating TOC
 // @namespace    http://tampermonkey.net/
-// @version      2.3
+// @version      2.4
 // @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能
 // @author       mkdir700
 // @match        https://*.atlassian.net/wiki/*
@@ -210,16 +210,16 @@ function buildToc() {
 }
 
 function generateTOC() {
-    var existingTOC = getExistingToc();
-    var toc;
+    // var existingTOC = getExistingToc();
+    // var toc;
 
-    if (existingTOC) {
-        toc = genertateTOCFromExistingToc(existingTOC);
-    } else {
-        toc = generateTOCFormPage();
-    }
+    // if (existingTOC) {
+        // toc = genertateTOCFromExistingToc(existingTOC);
+    // } else {
+        // toc = generateTOCFormPage();
+    // }
+    var toc = generateTOCFormPage();
 
-    // 检查目录是否为空
     if (!toc || toc.children.length === 0) {
         var emptyMessage = document.createElement('div');
         emptyMessage.id = 'floating-toc-empty-message';
@@ -237,7 +237,7 @@ function generateTOC() {
 
     // 优化目录列表样式
     var listItems = toc.querySelectorAll('li');
-    listItems.forEach(function(item) {
+    listItems.forEach(function(item, index) {
         item.style.marginBottom = '5px';
         var link = item.querySelector('a');
         if (link) {
@@ -247,14 +247,59 @@ function generateTOC() {
             link.style.padding = '3px 5px';
             link.style.borderRadius = '3px';
             link.style.transition = 'background-color 0.2s';
+            link.style.whiteSpace = 'nowrap';
+            link.style.overflow = 'hidden';
+            link.style.textOverflow = 'ellipsis';
+            link.style.maxWidth = '180px';  // 减小最大宽度
+
+            // 设置标题完整内容为title属性
+            link.title = link.textContent;
+
+            // 截断长标题
+            if (link.textContent.length > 25) {
+                link.textContent = link.textContent.substring(0, 22) + '...';
+            }
+
             link.addEventListener('mouseover', function() {
                 this.style.backgroundColor = '#f0f0f0';
             });
             link.addEventListener('mouseout', function() {
                 this.style.backgroundColor = 'transparent';
             });
+
+            // 优化缩进
+            var level = parseInt(item.style.marginLeft) / 10;
+            item.style.paddingLeft = (level * 15) + 'px';  // 使用 padding 代替 margin
+            item.style.marginLeft = '0';  // 移除左边距
+
+            // 为第三级及以下的标题添加折叠功能
+            if (level > 2) {
+                item.style.display = 'none';
+                var parentLi = item.parentElement.closest('li');
+                if (parentLi && !parentLi.classList.contains('has-submenu')) {
+                    parentLi.classList.add('has-submenu');
+                    var toggleBtn = document.createElement('span');
+                    toggleBtn.textContent = '▶';
+                    toggleBtn.style.cursor = 'pointer';
+                    toggleBtn.style.marginRight = '5px';
+                    toggleBtn.style.fontSize = '10px';  // 减小箭头大小
+                    parentLi.insertBefore(toggleBtn, parentLi.firstChild);
+
+                    toggleBtn.addEventListener('click', function(e) {
+                        e.stopPropagation();  // 防止点击事件冒泡
+                        var subItems = this.parentElement.querySelectorAll('li');
+                        subItems.forEach(function(subItem) {
+                            subItem.style.display = subItem.style.display === 'none' ? 'block' : 'none';
+                        });
+                        this.textContent = this.textContent === '▶' ? '▼' : '▶';
+                    });
+                }
+            }
         }
     });
+
+    // 添加平滑滚动
+    toc.style.scrollBehavior = 'smooth';
 
     return toc;
 }
@@ -398,4 +443,5 @@ function buildBackToTopButton() {
         characterData: true
     });
 
+    // ... 其他现有代码 ...
 })();
