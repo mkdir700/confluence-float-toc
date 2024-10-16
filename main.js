@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Confluence Floating TOC
 // @namespace    http://tampermonkey.net/
-// @version      2.4
+// @version      2.5
 // @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能
 // @author       mkdir700
 // @match        https://*.atlassian.net/wiki/*
@@ -96,6 +96,10 @@ function generateTOCFormPage() {
         }
 
         if (header.closest('[data-test-id="flag-visibility-wrapper"]')) {
+            return;
+        }
+
+        if (header.tagName === 'H2' && header.closest('[class="atlaskit-portal-container"]')) {
             return;
         }
 
