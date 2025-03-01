@@ -36,7 +36,7 @@ To use the Confluence Float TOC plugin, follow these steps:
 5. Save the script and refresh any open Confluence pages.
 
 ## Usage
-Once the plugin is installed, the floating TOC will automatically appear on Confluence pages. You can click on the TOC entries to navigate to the corresponding sections of the document.
+After installing the plugin, you need to refresh any open Confluence pages to activate the plugin functionality. Once refreshed, the floating TOC will automatically appear on Confluence pages. You can click on the TOC entries to navigate to the corresponding sections of the document.
 
 ## Contributing
 Contributions are welcome! If you have any suggestions, bug reports, or feature requests, please open an issue or submit a pull request on the GitHub repository.
