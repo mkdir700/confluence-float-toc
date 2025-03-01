@@ -1,5 +1,7 @@
 # Confluence Float TOC
 
+[English](README.MD) | [中文](README.zh-CN.md)
+
 ## Description
 The Confluence Float TOC plugin is a user script implemented using Tampermonkey. It enhances the Confluence documentation experience by providing a floating table of contents (TOC) that stays visible as you scroll through the page.
 
@@ -12,6 +14,7 @@ The Confluence Float TOC plugin is a user script implemented using Tampermonkey.
 - Floating table of contents: The plugin adds a floating TOC to the Confluence pages, allowing users to easily navigate through the document.
 - Automatic generation: The TOC is automatically generated based on the headings in the document, making it easy to keep the TOC up to date.
 - Smooth scrolling: Clicking on a TOC entry smoothly scrolls the page to the corresponding section.
+- Dark mode support: The plugin automatically detects Confluence's color mode (light/dark) and adjusts its styles accordingly.
 
 ## Installation
 
