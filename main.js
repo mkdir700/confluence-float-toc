@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Confluence Floating TOC
 // @namespace    http://tampermonkey.net/
-// @version      2.5
-// @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能
+// @version      2.6
+// @description  在 Confluence 文章页面上浮动展示文章目录，并支持展开和折叠功能，自动适应暗色/亮色模式
 // @author       mkdir700
 // @match        https://*.atlassian.net/wiki/*
 // @grant        none
@@ -123,13 +123,19 @@ function generateTOCFormPage() {
 }
 
 function buildToggleButton() {
+    // 检查当前颜色模式
+    const isDarkMode = document.documentElement.getAttribute('data-color-mode') === 'dark' || 
+                       (document.documentElement.getAttribute('data-color-mode') === 'light' && 
+                        document.documentElement.getAttribute('data-theme') && 
+                        document.documentElement.getAttribute('data-theme').includes('light:dark'));
+    
     var toggleButton = document.createElement('div');
     toggleButton.id = 'floating-toc-toggle';
     toggleButton.innerHTML = '&#9654;'; // 右箭头 Unicode 字符
     toggleButton.style.position = 'fixed';
     toggleButton.style.top = '200px';
     toggleButton.style.right = '0';
-    toggleButton.style.backgroundColor = '#007bff';
+    toggleButton.style.backgroundColor = isDarkMode ? '#4688ec' : '#007bff';
     toggleButton.style.color = '#fff';
     toggleButton.style.width = '20px';
     toggleButton.style.height = '40px';
@@ -175,14 +181,20 @@ function buildToggleButton() {
 
 
 function buildToc() {
+    // 检查当前颜色模式
+    const isDarkMode = document.documentElement.getAttribute('data-color-mode') === 'dark' || 
+                       (document.documentElement.getAttribute('data-color-mode') === 'light' && 
+                        document.documentElement.getAttribute('data-theme') && 
+                        document.documentElement.getAttribute('data-theme').includes('light:dark'));
+    
     var tocContainer = document.createElement('div');
     tocContainer.id = 'floating-toc-container';
     tocContainer.style.width = '220px'; // 增加宽度以包含padding
-    tocContainer.style.backgroundColor = '#fff';
-    tocContainer.style.border = '1px solid #ccc';
+    tocContainer.style.backgroundColor = isDarkMode ? '#2c2c2e' : '#fff';
+    tocContainer.style.border = isDarkMode ? '1px solid #444' : '1px solid #ccc';
     tocContainer.style.padding = '10px';
     tocContainer.style.boxSizing = 'border-box'; // 确保padding包含在宽度内
-    tocContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
+    tocContainer.style.boxShadow = isDarkMode ? '0 0 10px rgba(0,0,0,0.3)' : '0 0 10px rgba(0,0,0,0.1)';
     tocContainer.style.position = 'fixed';
     tocContainer.style.top = '200px';
     tocContainer.style.right = '0';
@@ -208,6 +220,7 @@ function buildToc() {
     tocTitle.style.textAlign = 'center';
     tocTitle.style.fontSize = '16px';
     tocTitle.style.fontWeight = 'bold';
+    tocTitle.style.color = isDarkMode ? '#bfc1c4' : '#000';
     tocContainer.appendChild(tocTitle);
 
     return tocContainer;
@@ -239,6 +252,12 @@ function generateTOC() {
     toc.style.padding = '0';
     toc.style.margin = '0';
 
+    // 检查当前颜色模式
+    const isDarkMode = document.documentElement.getAttribute('data-color-mode') === 'dark' || 
+                       (document.documentElement.getAttribute('data-color-mode') === 'light' && 
+                        document.documentElement.getAttribute('data-theme') && 
+                        document.documentElement.getAttribute('data-theme').includes('light:dark'));
+
     // 优化目录列表样式
     var listItems = toc.querySelectorAll('li');
     listItems.forEach(function(item, index) {
@@ -246,7 +265,7 @@ function generateTOC() {
         var link = item.querySelector('a');
         if (link) {
             link.style.textDecoration = 'none';
-            link.style.color = '#333';
+            link.style.color = isDarkMode ? '#a9abaf' : '#333';
             link.style.display = 'block';
             link.style.padding = '3px 5px';
             link.style.borderRadius = '3px';
@@ -264,8 +283,10 @@ function generateTOC() {
                 link.textContent = link.textContent.substring(0, 22) + '...';
             }
 
+            // 根据颜色模式设置悬停效果
+            const hoverBgColor = isDarkMode ? '#3a3a3c' : '#f0f0f0';
             link.addEventListener('mouseover', function() {
-                this.style.backgroundColor = '#f0f0f0';
+                this.style.backgroundColor = hoverBgColor;
             });
             link.addEventListener('mouseout', function() {
                 this.style.backgroundColor = 'transparent';
@@ -287,6 +308,7 @@ function generateTOC() {
                     toggleBtn.style.cursor = 'pointer';
                     toggleBtn.style.marginRight = '5px';
                     toggleBtn.style.fontSize = '10px';  // 减小箭头大小
+                    toggleBtn.style.color = isDarkMode ? '#a9abaf' : '#333'; // 根据颜色模式设置颜色
                     parentLi.insertBefore(toggleBtn, parentLi.firstChild);
 
                     toggleBtn.addEventListener('click', function(e) {
@@ -314,15 +336,106 @@ function updateMaxHeight(tocContainer) {
     tocContainer.style.maxHeight = (viewportHeight - topOffset - 20) + 'px'; // 20px 为一些额外的间距
 }
 
+// 检测 Confluence 页面的颜色模式并相应地调整插件样式
+function detectColorModeAndApplyStyles() {
+    // 检查 HTML 元素的 data-color-mode 属性
+    const isDarkMode = document.documentElement.getAttribute('data-color-mode') === 'dark' || 
+                       (document.documentElement.getAttribute('data-color-mode') === 'light' && 
+                        document.documentElement.getAttribute('data-theme') && 
+                        document.documentElement.getAttribute('data-theme').includes('light:dark'));
+    
+    // 获取插件元素
+    const tocContainer = document.getElementById('floating-toc-container');
+    const toggleButton = document.getElementById('floating-toc-toggle');
+    const backToTopButton = document.getElementById('back-to-top-button');
+    
+    if (isDarkMode) {
+        // 暗色模式样式
+        if (tocContainer) {
+            tocContainer.style.backgroundColor = '#2c2c2e'; // 深色背景
+            tocContainer.style.border = '1px solid #444';
+            tocContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.3)';
+            
+            // 修改目录标题和链接颜色
+            const tocTitle = tocContainer.querySelector('div');
+            if (tocTitle) {
+                tocTitle.style.color = '#bfc1c4'; // 使用 --ds-text 变量值
+            }
+            
+            // 修改所有链接颜色
+            const links = tocContainer.querySelectorAll('a');
+            links.forEach(link => {
+                link.style.color = '#a9abaf'; // 使用 --ds-text-subtle 变量值
+                
+                // 修改鼠标悬停效果
+                link.addEventListener('mouseover', function() {
+                    this.style.backgroundColor = '#3a3a3c';
+                });
+                link.addEventListener('mouseout', function() {
+                    this.style.backgroundColor = 'transparent';
+                });
+            });
+        }
+        
+        if (toggleButton) {
+            toggleButton.style.backgroundColor = '#4688ec'; // 使用 --ds-icon-accent-blue 变量值
+        }
+        
+        if (backToTopButton) {
+            backToTopButton.style.backgroundColor = '#4688ec'; // 使用 --ds-icon-accent-blue 变量值
+        }
+    } else {
+        // 亮色模式样式（恢复默认）
+        if (tocContainer) {
+            tocContainer.style.backgroundColor = '#fff';
+            tocContainer.style.border = '1px solid #ccc';
+            tocContainer.style.boxShadow = '0 0 10px rgba(0,0,0,0.1)';
+            
+            // 恢复目录标题颜色
+            const tocTitle = tocContainer.querySelector('div');
+            if (tocTitle) {
+                tocTitle.style.color = '#000';
+            }
+            
+            // 恢复所有链接颜色
+            const links = tocContainer.querySelectorAll('a');
+            links.forEach(link => {
+                link.style.color = '#333';
+                
+                // 恢复鼠标悬停效果
+                link.addEventListener('mouseover', function() {
+                    this.style.backgroundColor = '#f0f0f0';
+                });
+                link.addEventListener('mouseout', function() {
+                    this.style.backgroundColor = 'transparent';
+                });
+            });
+        }
+        
+        if (toggleButton) {
+            toggleButton.style.backgroundColor = '#007bff';
+        }
+        
+        if (backToTopButton) {
+            backToTopButton.style.backgroundColor = '#007bff';
+        }
+    }
+}
 
 function buildBackToTopButton() {
+    // 检查当前颜色模式
+    const isDarkMode = document.documentElement.getAttribute('data-color-mode') === 'dark' || 
+                       (document.documentElement.getAttribute('data-color-mode') === 'light' && 
+                        document.documentElement.getAttribute('data-theme') && 
+                        document.documentElement.getAttribute('data-theme').includes('light:dark'));
+    
     var backToTopButton = document.createElement('div');
     backToTopButton.id = 'back-to-top-button';
     backToTopButton.innerHTML = '&#9650;'; // 上箭头 Unicode 字符
     backToTopButton.style.position = 'fixed';
     backToTopButton.style.bottom = '30px';
     backToTopButton.style.right = '220px'; // 调整位置，使其位于目录左侧
-    backToTopButton.style.backgroundColor = '#007bff';
+    backToTopButton.style.backgroundColor = isDarkMode ? '#4688ec' : '#007bff';
     backToTopButton.style.color = '#fff';
     backToTopButton.style.width = '40px';
     backToTopButton.style.height = '40px';
@@ -332,7 +445,7 @@ function buildBackToTopButton() {
     backToTopButton.style.alignItems = 'center';
     backToTopButton.style.cursor = 'pointer';
     backToTopButton.style.fontSize = '20px';
-    backToTopButton.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+    backToTopButton.style.boxShadow = isDarkMode ? '0 2px 5px rgba(0,0,0,0.3)' : '0 2px 5px rgba(0,0,0,0.2)';
     backToTopButton.style.transition = 'opacity 0.3s';
     backToTopButton.style.opacity = '0';
     backToTopButton.style.zIndex = '1000';
@@ -445,6 +558,24 @@ function buildBackToTopButton() {
         childList: true,
         subtree: true,
         characterData: true
+    });
+
+    // 检测颜色模式并应用样式
+    detectColorModeAndApplyStyles();
+
+    // 监听颜色模式变化
+    const colorModeObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.type === 'attributes' && 
+                (mutation.attributeName === 'data-color-mode' || mutation.attributeName === 'data-theme')) {
+                detectColorModeAndApplyStyles();
+            }
+        });
+    });
+
+    colorModeObserver.observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-color-mode', 'data-theme']
     });
 
     // ... 其他现有代码 ...
